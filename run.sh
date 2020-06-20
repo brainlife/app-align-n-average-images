@@ -6,40 +6,47 @@ rm -f out.nii.gz
 
 # from fsl_anat
 quick_smooth() {
-  echo "quick_smooth"
-  local in=$1
-  local out=$2
-  $FSLDIR/bin/fslmaths $in -subsamp2 -subsamp2 -subsamp2 -subsamp2 vol16
-  $FSLDIR/bin/flirt -in vol16 -ref $in -out $out -noresampblur -applyxfm -paddingsize 16
-  # possibly do a tiny extra smooth to $out here?
-  $FSLDIR/bin/imrm vol16
+	echo "quick_smooth"
+	local in=$1
+	local out=$2
+	local tmpDir=$(dirname $out)/qs_tmpDir/
+	mkdir -p $tmpDir
+
+	$FSLDIR/bin/fslmaths $in -subsamp2 -subsamp2 -subsamp2 -subsamp2 ${tmpDir}/vol16
+	$FSLDIR/bin/flirt -in ${tmpDir}/vol16 -ref $in -out $out -noresampblur -applyxfm -paddingsize 16
+	# possibly do a tiny extra smooth to $out here?
+	$FSLDIR/bin/imrm ${tmpDir}/vol16
+	rm -rv ${tmpDir}/
 }
 
+# from fsl_anat
 quick_bias_corr()
 {
 	local in=$(remove_ext $1)
 	local out=$2
+	local tmpDir=$(dirname $out)/qbc_tmpDir/
+	mkdir -p $tmpDir
 
 	echo "doing quick bias corr"
 
-	quick_smooth ${in} ${in}_s20
-	$FSLDIR/bin/fslmaths ${in} -div ${in}_s20 ${in}_hpf
+	quick_smooth ${in} ${tmpDir}/${in}_s20
+	$FSLDIR/bin/fslmaths ${in} -div ${tmpDir}/${in}_s20 ${tmpDir}/${in}_hpf
 
-	$FSLDIR/bin/bet ${in}_hpf ${in}_hpf_brain -m -f 0.1 -v
+	$FSLDIR/bin/bet ${tmpDir}/${in}_hpf ${tmpDir}/${in}_hpf_brain -m -f 0.1 -v
     # get a smoothed version without the edge effects
-	$FSLDIR/bin/fslmaths ${in} -mas ${in}_hpf_brain_mask ${in}_hpf_s20
-	quick_smooth ${in}_hpf_s20 ${in}_hpf_s20
-	quick_smooth ${in}_hpf_brain_mask ${in}_initmask_s20
-	$FSLDIR/bin/fslmaths ${in}_hpf_s20 -div ${in}_initmask_s20 -mas ${in}_hpf_brain_mask ${in}_hpf2_s20
-	$FSLDIR/bin/fslmaths ${in} -mas ${in}_hpf_brain_mask -div ${in}_hpf2_s20 ${in}_hpf2_brain
+	$FSLDIR/bin/fslmaths ${in} -mas ${tmpDir}/${in}_hpf_brain_mask ${tmpDir}/${in}_hpf_s20
+	quick_smooth ${tmpDir}/${in}_hpf_s20 ${tmpDir}/${in}_hpf_s20
+	quick_smooth ${tmpDir}/${in}_hpf_brain_mask ${tmpDir}/${in}_initmask_s20
+	$FSLDIR/bin/fslmaths ${tmpDir}/${in}_hpf_s20 -div ${tmpDir}/${in}_initmask_s20 -mas ${tmpDir}/${in}_hpf_brain_mask ${tmpDir}/${in}_hpf2_s20
+	$FSLDIR/bin/fslmaths ${in} -mas ${tmpDir}/${in}_hpf_brain_mask -div ${tmpDir}/${in}_hpf2_s20 ${tmpDir}/${in}_hpf2_brain
 	# make sure the overall scaling doesn't change (equate medians)
-	med0=`$FSLDIR/bin/fslstats ${in} -k ${in}_hpf_brain_mask -P 50`;
-	med1=`$FSLDIR/bin/fslstats ${in}_hpf2_brain -k ${in}_hpf_brain_mask -P 50`;
-	$FSLDIR/bin/fslmaths ${in}_hpf2_brain -div $med1 -mul $med0 ${in}_hpf2_brain
+	med0=`$FSLDIR/bin/fslstats ${in} -k ${tmpDir}/${in}_hpf_brain_mask -P 50`;
+	med1=`$FSLDIR/bin/fslstats ${in}_hpf2_brain -k ${tmpDir}/${in}_hpf_brain_mask -P 50`;
+	$FSLDIR/bin/fslmaths ${tmpDir}/${in}_hpf2_brain -div $med1 -mul $med0 ${tmpDir}/${in}_hpf2_brain
 
-	mv ${in}_hpf2_brain.nii.gz $out
-	ls ${in}_hpf* && imrm ${in}_hpf*
-	ls ${in}*s20* && imrm ${in}*s20*
+	# cleanup
+	mv ${tmpDir}/${in}_hpf2_brain.nii.gz $out
+	rm -rv ${tmpDir}/
 }
 
 if [[ -e config.json ]] ; then 
@@ -189,6 +196,27 @@ cmd="fslmaths ${outDir}/img1_halfway.nii.gz \
 echo $cmd && eval $cmd 
 
 ################################################################################
+# cleanup 
+ls ${outDir}/*xfm && rm ${outDir}/*xfm
+ls ${outDir}/*mat && rm ${outDir}/*mat
+ls ${outDir}/*avscale && rm ${outDir}/*avscale
+
+################################################################################
+# make png
+slicer ${outDir}/out.nii.gz -x 0.5 out_aligncheck.png
+
+# create product.json
+cat << EOF > product.json
+{
+    "brainlife": [
+        { 
+            "type": "image/png", 
+            "name": "Alignment Check (-x 0.5)",
+            "base64": "$(base64 -w 0 out_aligncheck.png)"
+        }
+    ]
+}
+EOF
 
 # FSL LICENSE
 #   LICENCE
