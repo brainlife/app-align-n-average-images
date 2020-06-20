@@ -1,8 +1,7 @@
 #!/bin/bash
 
-rm -f out.nii.gz
-
-#set -x
+################################################################################
+# funcs
 
 # from fsl_anat
 quick_smooth() {
@@ -49,10 +48,15 @@ quick_bias_corr()
 	rm -rv ${tmpDir}/
 }
 
+################################################################################
+################################################################################
+# inputs
+
 if [[ -e config.json ]] ; then 
 	img1=$(jq -r .image1 config.json)
 	img2=$(jq -r .image2 config.json)
-	outDir=${PWD}/
+	outDir=${PWD}/output_avg/
+	mkdir -p ${outDir}
 	do_skullS=$(jq -r .skulls config.json)
 else
 	if [[ "$#" -lt 2 ]] ; then
@@ -192,7 +196,7 @@ echo $cmd && eval $cmd
 
 cmd="fslmaths ${outDir}/img1_halfway.nii.gz \
 		-add ${outDir}/img2_halfway.nii.gz \
-		-div 2 -thr 0 ${outDir}/out.nii.gz"
+		-div 2 -thr 0 ${outDir}/t1.nii.gz"
 echo $cmd && eval $cmd 
 
 ################################################################################
@@ -203,7 +207,7 @@ ls ${outDir}/*avscale && rm ${outDir}/*avscale
 
 ################################################################################
 # make png
-slicer ${outDir}/out.nii.gz -x 0.5 out_aligncheck.png
+slicer ${outDir}/out.nii.gz -a ${outDir}/out_aligncheck.png
 
 # create product.json
 cat << EOF > product.json
@@ -211,8 +215,8 @@ cat << EOF > product.json
     "brainlife": [
         { 
             "type": "image/png", 
-            "name": "Alignment Check (-x 0.5)",
-            "base64": "$(base64 -w 0 out_aligncheck.png)"
+            "name": "Alignment Check (-a)",
+            "base64": "$(base64 -w 0 ${outDir}/out_aligncheck.png)"
         }
     ]
 }
