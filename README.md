@@ -11,7 +11,7 @@ align one image to another, and then average
 ### Project Contributors 
 
 - Soichi Hayashi (hayashi@iu.edu)
-- Franco Pestilli (franpest@iu.edu) 
+- Franco Pestilli (frakkopesto@gmail.com) 
 
 ### Funding 
 
