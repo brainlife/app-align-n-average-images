@@ -60,6 +60,6 @@ This App uses [singularity](https://www.sylabs.io/singularity/) to run. If you d
   - FSL: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/
   - jq: https://stedolan.github.io/jq/
   
-  #### MIT Copyright (c) Josh Faskowitz
+  #### MIT Copyright (c) Josh Faskowitz & brainlife.io
 
 <sub> This material is based upon work supported by the National Science Foundation Graduate Research Fellowship under Grant No. 1342962. Any opinion, findings, and conclusions or recommendations expressed in this material are those of the authors(s) and do not necessarily reflect the views of the National Science Foundation. </sub>
