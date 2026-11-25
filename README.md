@@ -2,6 +2,32 @@
 [![Run on Brainlife.io](https://img.shields.io/badge/Brainlife-brainlife.app.385-blue.svg)](https://doi.org/https://doi.org/10.25663/brainlife.app.385)
 
 # app-average-imgs
+
+<!-- brainlife-app:begin (generated from the App manifest; edit the manifest, not this block) -->
+
+**Aligns two T1-weighted images of the same subject into a midway space with FSL flirt and averages them into a single higher-SNR T1w image.**
+
+Reorients both images, optionally bias-corrects and skull-strips them to weight the registration, registers each to the other with FSL flirt, places both in a halfway space and averages them, reslicing to the resolution of the first image. Use it when a subject has repeated anatomical acquisitions; check the result visually, as the README recommends.
+
+Run it on brainlife.io: [https://doi.org/10.25663/brainlife.app.385](https://doi.org/10.25663/brainlife.app.385)
+
+| Input | Datatype | Required | Description |
+|---|---|---|---|
+| `image1` | `neuro/anat/t1w` | yes | First T1-weighted image; its resolution is used for the averaged output. |
+| `image2` | `neuro/anat/t1w` | yes | Second T1-weighted image of the same subject. |
+
+| Output | Datatype | Description |
+|---|---|---|
+| `output_avg` | `neuro/anat/t1w` | average of inputs, reslices to resolution of image1 |
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `skulls` | boolean | `true` | do skull struc |
+
+Runtime: container `brainlife/fsl:5.0.9`; 1 CPUs; 0.42 h walltime.
+
+<!-- brainlife-app:end -->
+
 This app aligns one image to another in a midway space, and then averages the two images. This app can be useful when you have repeat anatomical aquisitions, and you'd like to make an average, with persumably higher signal-to-noise. Please verify the output of the app with visual inspection.
 
 ### Authors 
